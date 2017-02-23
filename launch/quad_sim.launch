@@ -1,0 +1,33 @@
+<launch>
+
+    <node pkg="tf" 
+        name="fixed_frame"
+        type="static_transform_publisher"
+        args="0 0 0 0 0 0 1 map world 100"
+    />
+
+    <node pkg="mod_ctrl_quad"
+        name="quad_dynamics"
+        type="quad_sim"
+        output="screen">
+        <rosparam command="load" file="$(find mod_ctrl_quad)/launch/quad_params.yaml"/>
+    </node>
+
+
+    <node pkg="rviz"
+        name="rviz"
+        type="rviz"
+        args="-d $(find mod_ctrl_quad)/launch/quad_viz.rviz -f world"
+    />
+
+    <node pkg="rqt_reconfigure"
+        name="rqt_reconfigure"
+        type="rqt_reconfigure"
+    />
+
+    <node pkg="mod_ctrl_quad"
+        name="controller"
+        type="controller.py"
+    />
+
+</launch>
