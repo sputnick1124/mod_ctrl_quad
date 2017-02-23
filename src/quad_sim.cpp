@@ -19,7 +19,7 @@ class Quadrotor
 
         tf::TransformBroadcaster br;
 
-        void wrench_callback(const geometry_msgs::Wrench::ConstPtr& msg)
+/*        void wrench_callback(const geometry_msgs::Wrench::ConstPtr& msg)
         {
             double f, Tx, Ty, Tz;
             cout << msg->force.z <<endl;
@@ -29,32 +29,19 @@ class Quadrotor
             Tz = msg->torque.z;
             F << f, Tx, Ty, Tz;
             set_control(f,Tx,Ty,Tz);
-        };
-
-        void set_control(double f, double Tx, double Ty, double Tz)
-        {
-//            F << f, Tx, Ty, Tz;
-            F(0) = f;
-            F(1) = Tx;
-            F(2) = Ty;
-            F(3) = Tz;
-            cout << F <<endl;
-        };
+        };*/
 
         ros::Publisher pose_pub;
-        ros::Subscriber wrench_sub;
+//        ros::Subscriber wrench_sub;
         ros::Rate loop_rate = ros::Rate(200);
 
-//        tuple<double, double,double,double,double,double,double,double,double,double,double,double,double>
         tuple<double,VectorXd> quad_dynamics(double, VectorXd);
 
         void quad_run(double t, VectorXd x)
         {
-            double t_n;
-            VectorXd x_n(12);
             while(1)
             {
-                tie(t_n,x_n) = quad_dynamics(t,x);
+                tie(t,x) = quad_dynamics(t,x);
             }
         };
 
@@ -64,9 +51,8 @@ class Quadrotor
         {
             VectorXd x0(12);
             vector<double> x0temp;
-//            double x0[12];
 
-            wrench_sub = nh.subscribe("quad_dynamics/quad_wrench",1,&Quadrotor::wrench_callback,this);
+//            wrench_sub = nh.subscribe("quad_dynamics/quad_wrench",1,&Quadrotor::wrench_callback,this);
             pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/quad_dynamics/quad_pose",100);
             nh.getParam("/quad_dynamics/x0",x0temp);
             nh.getParam("/quad_dynamics/Jx",Jx);
@@ -83,9 +69,20 @@ class Quadrotor
 
             set_control(m*g,0,0,0.01);
             double t = ros::Time::now().toSec();
-//            quad_dynamics(t,x0);
             quad_run(t,x0);
         }
+
+        void set_control(double f, double Tx, double Ty, double Tz)
+        {
+            F << f, Tx, Ty, Tz;
+/*            F(0) = f;
+            F(1) = Tx;
+            F(2) = Ty;
+            F(3) = Tz;*/
+            cout << F <<endl;
+        };
+
+
 };
 
 
@@ -149,12 +146,27 @@ Quadrotor::quad_dynamics(
     }
 }
 
+void wrench_callback(const geometry_msgs::Wrench::ConstPtr& msg)
+{
+    double f, Tx, Ty, Tz;
+    cout << msg->force.z <<endl;
+    f = msg->force.z;
+    Tx = msg->torque.x;
+    Ty = msg->torque.y;
+    Tz = msg->torque.z;
+//    quad.set_control(f,Tx,Ty,Tz);
+};
+
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "quad_sim");
     ros::NodeHandle nh;
+    ros::Subscriber wrench_sub;
 
     Quadrotor quad(nh);
+
+    wrench_sub = nh.subscribe("/quad_dynamics/quad_wrench",10,wrench_callback);
 
     ros::spin();
 
